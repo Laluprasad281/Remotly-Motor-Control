@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Smart LED Control</title>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+<style>
+  body {
+    text-align: center;
+    font-family: "Poppins", Arial, sans-serif;
+    margin-top: 100px;
+    background: linear-gradient(135deg, #74ebd5, #9face6);
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+
+  h1 {
+    font-size: 2.5em;
+    color: #fff;
+    text-shadow: 2px 2px 8px rgba(0,0,0,0.2);
+    margin-bottom: 40px;
+    animation: fadeInDown 1s ease-in-out;
+  }
+
+  button {
+    padding: 20px 40px;
+    margin: 15px;
+    font-size: 22px;
+    font-weight: bold;
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
+    box-shadow: 0 8px 15px rgba(0,0,0,0.2);
+    transition: all 0.3s ease-in-out;
+    transform: scale(1);
+  }
+
+  button:hover {
+    transform: scale(1.1);
+    box-shadow: 0 12px 20px rgba(0,0,0,0.3);
+  }
+
+  #on {
+    background: linear-gradient(45deg, #28a745, #85e085);
+    color: white;
+  }
+
+  #off {
+    background: linear-gradient(45deg, #e74c3c, #f78ca0);
+    color: white;
+  }
+
+  /* Animation */
+  @keyframes fadeInDown {
+    from { opacity: 0; transform: translateY(-30px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+</style>
+
+</head>
+<body>
+  <h1>Smart Motor Control</h1>
+  <button id="on">Motor ON</button>
+  <button id="off">Motor OFF</button>
+
+  <script>
+    // 🔹 Paste your Firebase config here
+    const firebaseConfig = {
+  apiKey: "AIzaSyBQ3Jpwl7EKR-ShD6y3vN0nvgAt4_xf84k",
+  authDomain: "remotly-led-controle.firebaseapp.com",
+  projectId: "remotly-led-controle",
+  storageBucket: "remotly-led-controle.firebasestorage.app",
+  messagingSenderId: "826464946281",
+  appId: "1:826464946281:web:78f38eb9427a8089a57af8",
+  measurementId: "G-1E1M1ZRKN0"
+};
+
+    firebase.initializeApp(firebaseConfig);
+    var database = firebase.database();
+
+    document.getElementById("on").onclick = function() {
+      database.ref("/").update({ LED: "ON" });
+    };
+    document.getElementById("off").onclick = function() {
+      database.ref("/").update({ LED: "OFF" });
+    };
+  </script>
+</body>
+</html>

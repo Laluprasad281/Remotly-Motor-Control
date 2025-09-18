@@ -1,92 +1,167 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Smart LED Control</title>
+  <title>Smart Motor Control</title>
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-<style>
-  body {
-    text-align: center;
-    font-family: "Poppins", Arial, sans-serif;
-    margin-top: 100px;
-    background: linear-gradient(135deg, #74ebd5, #9face6);
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-  }
+  <style>
+    body {
+      text-align: center;
+      font-family: "Poppins", Arial, sans-serif;
+      margin-top: 40px;
+      background: linear-gradient(135deg, #74ebd5, #9face6);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
 
-  h1 {
-    font-size: 2.5em;
-    color: #fff;
-    text-shadow: 2px 2px 8px rgba(0,0,0,0.2);
-    margin-bottom: 40px;
-    animation: fadeInDown 1s ease-in-out;
-  }
+    h1 {
+      font-size: 2.5em;
+      color: #fff;
+      text-shadow: 2px 2px 8px rgba(0,0,0,0.2);
+      margin-bottom: 30px;
+      animation: fadeInDown 1s ease-in-out;
+    }
 
-  button {
-    padding: 20px 40px;
-    margin: 15px;
-    font-size: 22px;
-    font-weight: bold;
-    border: none;
-    border-radius: 50px;
-    cursor: pointer;
-    box-shadow: 0 8px 15px rgba(0,0,0,0.2);
-    transition: all 0.3s ease-in-out;
-    transform: scale(1);
-  }
+    button {
+      padding: 15px 35px;
+      margin: 10px;
+      font-size: 20px;
+      font-weight: bold;
+      border: none;
+      border-radius: 50px;
+      cursor: pointer;
+      box-shadow: 0 8px 15px rgba(0,0,0,0.2);
+      transition: all 0.3s ease-in-out;
+    }
 
-  button:hover {
-    transform: scale(1.1);
-    box-shadow: 0 12px 20px rgba(0,0,0,0.3);
-  }
+    button:hover {
+      transform: scale(1.1);
+      box-shadow: 0 12px 20px rgba(0,0,0,0.3);
+    }
 
-  #on {
-    background: linear-gradient(45deg, #e74c3c, #f78ca0);
-    color: white;
-  }
+    #on {
+      background: linear-gradient(45deg, #e74c3c, #f78ca0);
+      color: white;
+    }
 
-  #off {
-    background: linear-gradient(45deg, #28a745, #85e085);
-    color: white;
-  }
+    #off {
+      background: linear-gradient(45deg, #28a745, #85e085);
+      color: white;
+    }
 
-  /* Animation */
-  @keyframes fadeInDown {
-    from { opacity: 0; transform: translateY(-30px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-</style>
+    /* --- Regulator Knob Style --- */
+    .knob-container {
+      margin-top: 40px;
+      width: 160px;
+      height: 160px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, #fff, #bbb);
+      box-shadow: inset -5px -5px 15px rgba(255,255,255,0.7),
+                  inset 5px 5px 15px rgba(0,0,0,0.2),
+                  0 8px 20px rgba(0,0,0,0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
 
+    .knob {
+      width: 60px;
+      height: 60px;
+      background: linear-gradient(145deg, #eee, #ccc);
+      border-radius: 50%;
+      box-shadow: inset -2px -2px 8px rgba(255,255,255,0.7),
+                  inset 4px 4px 8px rgba(0,0,0,0.3);
+      transform: rotate(0deg);
+      transition: transform 0.2s linear;
+      position: relative;
+    }
+
+    .knob::after {
+      content: "";
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      width: 6px;
+      height: 20px;
+      background: #444;
+      border-radius: 3px;
+      transform: translateX(-50%);
+    }
+
+    .speed-label {
+      margin-top: 20px;
+      font-size: 22px;
+      font-weight: bold;
+      color: #fff;
+    }
+  </style>
 </head>
 <body>
   <h1>Smart Motor Control</h1>
+
+  <!-- Motor ON/OFF Buttons -->
   <button id="off">Motor ON</button>
   <button id="on">Motor OFF</button>
 
+  <!-- Regulator Knob -->
+  <div class="knob-container">
+    <div class="knob" id="knob"></div>
+  </div>
+  <div class="speed-label">Speed: <span id="speedValue">0</span>%</div>
+
   <script>
-    // 🔹 Paste your Firebase config here
+    // 🔹 Firebase Config
     const firebaseConfig = {
-  apiKey: "AIzaSyBQ3Jpwl7EKR-ShD6y3vN0nvgAt4_xf84k",
-  authDomain: "remotly-led-controle.firebaseapp.com",
-  projectId: "remotly-led-controle",
-  storageBucket: "remotly-led-controle.firebasestorage.app",
-  messagingSenderId: "826464946281",
-  appId: "1:826464946281:web:78f38eb9427a8089a57af8",
-  measurementId: "G-1E1M1ZRKN0"
-};
+      apiKey: "AIzaSyBQ3Jpwl7EKR-ShD6y3vN0nvgAt4_xf84k",
+      authDomain: "remotly-led-controle.firebaseapp.com",
+      projectId: "remotly-led-controle",
+      storageBucket: "remotly-led-controle.firebasestorage.app",
+      messagingSenderId: "826464946281",
+      appId: "1:826464946281:web:78f38eb9427a8089a57af8",
+      measurementId: "G-1E1M1ZRKN0"
+    };
 
     firebase.initializeApp(firebaseConfig);
     var database = firebase.database();
 
+    // 🔹 Motor ON
     document.getElementById("on").onclick = function() {
       database.ref("/").update({ LED: "ON" });
     };
+
+    // 🔹 Motor OFF
     document.getElementById("off").onclick = function() {
       database.ref("/").update({ LED: "OFF" });
     };
+
+    // --- Knob Control ---
+    const knob = document.getElementById("knob");
+    const speedValue = document.getElementById("speedValue");
+    let angle = 0;
+
+    let isDragging = false;
+
+    knob.addEventListener("mousedown", () => { isDragging = true; });
+    document.addEventListener("mouseup", () => { isDragging = false; });
+    document.addEventListener("mousemove", (e) => {
+      if (isDragging) {
+        // Map mouse X movement to angle
+        angle += e.movementX; 
+        if (angle < 0) angle = 0;
+        if (angle > 270) angle = 270;
+
+        knob.style.transform = `rotate(${angle}deg)`;
+
+        let speed = Math.round((angle / 270) * 100);
+        speedValue.innerText = speed;
+
+        database.ref("/").update({ Speed: speed });
+      }
+    });
   </script>
 </body>
 </html>

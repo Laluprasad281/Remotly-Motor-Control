@@ -76,7 +76,7 @@
       box-shadow: inset -2px -2px 8px rgba(255,255,255,0.7),
                   inset 4px 4px 8px rgba(0,0,0,0.3);
       transform: rotate(0deg);
-      transition: transform 0.2s linear;
+      transition: transform 0.1s linear;
       position: relative;
     }
 
@@ -142,24 +142,35 @@
     const knob = document.getElementById("knob");
     const speedValue = document.getElementById("speedValue");
     let angle = 0;
-
     let isDragging = false;
 
+    // Update speed
+    function updateSpeed(deltaX) {
+      angle += deltaX;
+      if (angle < 0) angle = 0;
+      if (angle > 270) angle = 270;
+
+      knob.style.transform = `rotate(${angle}deg)`;
+      let speed = Math.round((angle / 270) * 100);
+      speedValue.innerText = speed;
+
+      database.ref("/").update({ Speed: speed });
+    }
+
+    // --- Mouse Events ---
     knob.addEventListener("mousedown", () => { isDragging = true; });
     document.addEventListener("mouseup", () => { isDragging = false; });
     document.addEventListener("mousemove", (e) => {
-      if (isDragging) {
-        // Map mouse X movement to angle
-        angle += e.movementX; 
-        if (angle < 0) angle = 0;
-        if (angle > 270) angle = 270;
+      if (isDragging) updateSpeed(e.movementX);
+    });
 
-        knob.style.transform = `rotate(${angle}deg)`;
-
-        let speed = Math.round((angle / 270) * 100);
-        speedValue.innerText = speed;
-
-        database.ref("/").update({ Speed: speed });
+    // --- Touch Events (for mobile) ---
+    knob.addEventListener("touchstart", () => { isDragging = true; });
+    document.addEventListener("touchend", () => { isDragging = false; });
+    document.addEventListener("touchmove", (e) => {
+      if (isDragging && e.touches.length > 0) {
+        let touch = e.touches[0];
+        updateSpeed(touch.clientX - window.innerWidth / 2 > 0 ? 2 : -2);
       }
     });
   </script>

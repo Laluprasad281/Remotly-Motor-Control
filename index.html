@@ -8,7 +8,6 @@
     body {
       text-align: center;
       font-family: "Poppins", Arial, sans-serif;
-      margin-top: 40px;
       background: linear-gradient(135deg, #74ebd5, #9face6);
       height: 100vh;
       display: flex;
@@ -16,47 +15,27 @@
       align-items: center;
       justify-content: center;
     }
-
-    h1 {
-      font-size: 2.5em;
-      color: #fff;
-      text-shadow: 2px 2px 8px rgba(0,0,0,0.2);
-      margin-bottom: 30px;
-      animation: fadeInDown 1s ease-in-out;
-    }
-
+    h1 { font-size: 2.2em; color: #fff; margin-bottom: 25px; }
     button {
-      padding: 15px 35px;
-      margin: 10px;
-      font-size: 20px;
+      padding: 12px 28px;
+      margin: 8px;
+      font-size: 18px;
       font-weight: bold;
       border: none;
-      border-radius: 50px;
+      border-radius: 40px;
       cursor: pointer;
-      box-shadow: 0 8px 15px rgba(0,0,0,0.2);
-      transition: all 0.3s ease-in-out;
+      box-shadow: 0 6px 12px rgba(0,0,0,0.2);
+      transition: 0.3s;
     }
+    button:hover { transform: scale(1.1); }
+    #on { background: linear-gradient(45deg, #28a745, #85e085); color: white; }
+    #off { background: linear-gradient(45deg, #e74c3c, #f78ca0); color: white; }
 
-    button:hover {
-      transform: scale(1.1);
-      box-shadow: 0 12px 20px rgba(0,0,0,0.3);
-    }
-
-    #on {
-      background: linear-gradient(45deg, #e74c3c, #f78ca0);
-      color: white;
-    }
-
-    #off {
-      background: linear-gradient(45deg, #28a745, #85e085);
-      color: white;
-    }
-
-    /* --- Regulator Knob Style --- */
+    /* --- Knob --- */
     .knob-container {
-      margin-top: 40px;
-      width: 160px;
-      height: 160px;
+      margin-top: 30px;
+      width: 220px;
+      height: 220px;
       border-radius: 50%;
       background: radial-gradient(circle at 30% 30%, #fff, #bbb);
       box-shadow: inset -5px -5px 15px rgba(255,255,255,0.7),
@@ -67,110 +46,112 @@
       justify-content: center;
       position: relative;
     }
-
     .knob {
-      width: 60px;
-      height: 60px;
+      width: 80px;
+      height: 80px;
       background: linear-gradient(145deg, #eee, #ccc);
       border-radius: 50%;
       box-shadow: inset -2px -2px 8px rgba(255,255,255,0.7),
                   inset 4px 4px 8px rgba(0,0,0,0.3);
       transform: rotate(0deg);
-      transition: transform 0.1s linear;
+      transition: transform 0.2s ease;
       position: relative;
     }
-
     .knob::after {
       content: "";
       position: absolute;
       top: 10px;
       left: 50%;
       width: 6px;
-      height: 20px;
+      height: 28px;
       background: #444;
       border-radius: 3px;
       transform: translateX(-50%);
     }
-
-    .speed-label {
-      margin-top: 20px;
-      font-size: 22px;
-      font-weight: bold;
-      color: #fff;
-    }
+    .label { position: absolute; font-size: 16px; font-weight: bold; color: #222; }
+    .speed-label { margin-top: 15px; font-size: 20px; font-weight: bold; color: #fff; }
   </style>
 </head>
 <body>
   <h1>Smart Motor Control</h1>
 
-  <!-- Motor ON/OFF Buttons -->
-  <button id="off">Motor ON</button>
-  <button id="on">Motor OFF</button>
+  <!-- ON/OFF Buttons -->
+  <button id="on">Motor ON</button>
+  <button id="off">Motor OFF</button>
 
-  <!-- Regulator Knob -->
-  <div class="knob-container">
+  <!-- Knob -->
+  <div class="knob-container" id="knobContainer">
     <div class="knob" id="knob"></div>
+    <div class="label" style="top: 190px; left: 50%;"></div>
+    <div class="label" style="top: 40px; left: 50%;"></div>
+    <div class="label" style="top: 115px; left: 200px;"></div>
   </div>
-  <div class="speed-label">Speed: <span id="speedValue">0</span>%</div>
+  <div class="speed-label">Mode: <span id="speedValue">Low</span></div>
 
   <script>
     // 🔹 Firebase Config
     const firebaseConfig = {
       apiKey: "AIzaSyBQ3Jpwl7EKR-ShD6y3vN0nvgAt4_xf84k",
       authDomain: "remotly-led-controle.firebaseapp.com",
+      databaseURL: "https://remotly-led-controle-default-rtdb.firebaseio.com/",
       projectId: "remotly-led-controle",
-      storageBucket: "remotly-led-controle.firebasestorage.app",
+      storageBucket: "remotly-led-controle.appspot.com",
       messagingSenderId: "826464946281",
       appId: "1:826464946281:web:78f38eb9427a8089a57af8",
       measurementId: "G-1E1M1ZRKN0"
     };
-
     firebase.initializeApp(firebaseConfig);
     var database = firebase.database();
 
     // 🔹 Motor ON
     document.getElementById("on").onclick = function() {
-      database.ref("/").update({ LED: "ON" });
+      database.ref("/").update({ Motor: "ON" });
     };
-
     // 🔹 Motor OFF
     document.getElementById("off").onclick = function() {
-      database.ref("/").update({ LED: "OFF" });
+      database.ref("/").update({ Motor: "OFF" });
     };
 
-    // --- Knob Control ---
+    // 🔹 Knob
     const knob = document.getElementById("knob");
+    const knobContainer = document.getElementById("knobContainer");
     const speedValue = document.getElementById("speedValue");
-    let angle = 0;
     let isDragging = false;
 
-    // Update speed
-    function updateSpeed(deltaX) {
-      angle += deltaX;
-      if (angle < 0) angle = 0;
-      if (angle > 270) angle = 270;
-
-      knob.style.transform = `rotate(${angle}deg)`;
-      let speed = Math.round((angle / 270) * 100);
-      speedValue.innerText = speed;
-
-      database.ref("/").update({ Speed: speed });
+    function snapToNearest(deg) {
+      let positions = [0, 135, 270];
+      let labels = ["Low", "Medium", "High"];
+      let nearest = positions.reduce((p, c) =>
+        Math.abs(c - deg) < Math.abs(p - deg) ? c : p
+      );
+      knob.style.transform = `rotate(${nearest}deg)`;
+      let mode = labels[positions.indexOf(nearest)];
+      speedValue.innerText = mode;
+      database.ref("/").update({ SpeedMode: mode });
     }
 
-    // --- Mouse Events ---
-    knob.addEventListener("mousedown", () => { isDragging = true; });
-    document.addEventListener("mouseup", () => { isDragging = false; });
-    document.addEventListener("mousemove", (e) => {
-      if (isDragging) updateSpeed(e.movementX);
-    });
+    function setAngle(x, y) {
+      let rect = knobContainer.getBoundingClientRect();
+      let cx = rect.left + rect.width / 2;
+      let cy = rect.top + rect.height / 2;
+      let dx = x - cx;
+      let dy = y - cy;
+      let rad = Math.atan2(dy, dx);
+      let deg = rad * (180 / Math.PI) + 90;
+      if (deg < 0) deg = 0;
+      if (deg > 270) deg = 270;
+      snapToNearest(deg);
+    }
 
-    // --- Touch Events (for mobile) ---
-    knob.addEventListener("touchstart", () => { isDragging = true; });
-    document.addEventListener("touchend", () => { isDragging = false; });
-    document.addEventListener("touchmove", (e) => {
+    knob.addEventListener("mousedown", () => isDragging = true);
+    document.addEventListener("mouseup", () => isDragging = false);
+    document.addEventListener("mousemove", e => { if (isDragging) setAngle(e.clientX, e.clientY); });
+    knob.addEventListener("touchstart", e => { e.preventDefault(); isDragging = true; });
+    document.addEventListener("touchend", () => isDragging = false);
+    document.addEventListener("touchmove", e => {
       if (isDragging && e.touches.length > 0) {
-        let touch = e.touches[0];
-        updateSpeed(touch.clientX - window.innerWidth / 2 > 0 ? 2 : -2);
+        let t = e.touches[0];
+        setAngle(t.clientX, t.clientY);
       }
     });
   </script>

@@ -15,7 +15,13 @@
       align-items: center;
       justify-content: center;
     }
-    h1 { font-size: 2.2em; color: #fff; margin-bottom: 25px; }
+
+    h1 {
+      font-size: 2.2em;
+      color: #fff;
+      margin-bottom: 25px;
+    }
+
     button {
       padding: 12px 28px;
       margin: 8px;
@@ -28,10 +34,11 @@
       transition: 0.3s;
     }
     button:hover { transform: scale(1.1); }
-    #on { background: linear-gradient(45deg, #28a745, #85e085); color: white; }
-    #off { background: linear-gradient(45deg, #e74c3c, #f78ca0); color: white; }
 
-    /* --- Knob --- */
+    #on { background: linear-gradient(45deg, #e74c3c, #f78ca0); color: white; }
+    #off { background: linear-gradient(45deg,  #28a745, #85e085); color: white; }
+
+    /* --- Regulator Knob --- */
     .knob-container {
       margin-top: 30px;
       width: 220px;
@@ -46,6 +53,7 @@
       justify-content: center;
       position: relative;
     }
+
     .knob {
       width: 80px;
       height: 80px;
@@ -57,6 +65,7 @@
       transition: transform 0.2s ease;
       position: relative;
     }
+
     .knob::after {
       content: "";
       position: absolute;
@@ -68,20 +77,36 @@
       border-radius: 3px;
       transform: translateX(-50%);
     }
-    .label { position: absolute; font-size: 16px; font-weight: bold; color: #222; }
-    .speed-label { margin-top: 15px; font-size: 20px; font-weight: bold; color: #fff; }
+
+    /* Labels around knob */
+    .label {
+      position: absolute;
+      font-size: 16px;
+      font-weight: bold;
+      color: #222;
+      transform: translate(-50%, -50%);
+    }
+
+    .speed-label {
+      margin-top: 15px;
+      font-size: 20px;
+      font-weight: bold;
+      color: #fff;
+    }
   </style>
 </head>
 <body>
   <h1>Smart Motor Control</h1>
 
-  <!-- ON/OFF Buttons -->
-  <button id="on">Motor ON</button>
-  <button id="off">Motor OFF</button>
+  <!-- Motor ON/OFF Buttons -->
+  
+  <button id="off">Motor ON</button>
+  <button id="on">Motor OFF</button>
 
-  <!-- Knob -->
+  <!-- Regulator Knob -->
   <div class="knob-container" id="knobContainer">
     <div class="knob" id="knob"></div>
+    <!-- Labels -->
     <div class="label" style="top: 190px; left: 50%;"></div>
     <div class="label" style="top: 40px; left: 50%;"></div>
     <div class="label" style="top: 115px; left: 200px;"></div>
@@ -93,65 +118,86 @@
     const firebaseConfig = {
       apiKey: "AIzaSyBQ3Jpwl7EKR-ShD6y3vN0nvgAt4_xf84k",
       authDomain: "remotly-led-controle.firebaseapp.com",
-      databaseURL: "https://remotly-led-controle-default-rtdb.firebaseio.com/",
       projectId: "remotly-led-controle",
-      storageBucket: "remotly-led-controle.appspot.com",
+      storageBucket: "remotly-led-controle.firebasestorage.app",
       messagingSenderId: "826464946281",
       appId: "1:826464946281:web:78f38eb9427a8089a57af8",
       measurementId: "G-1E1M1ZRKN0"
     };
+
     firebase.initializeApp(firebaseConfig);
     var database = firebase.database();
 
     // 🔹 Motor ON
     document.getElementById("on").onclick = function() {
-      database.ref("/").update({ Motor: "ON" });
-    };
-    // 🔹 Motor OFF
-    document.getElementById("off").onclick = function() {
-      database.ref("/").update({ Motor: "OFF" });
+      database.ref("/").update({ LED: "ON" });
     };
 
-    // 🔹 Knob
+    // 🔹 Motor OFF
+    document.getElementById("off").onclick = function() {
+      database.ref("/").update({ LED: "OFF" });
+    };
+
+    // --- Knob Control ---
     const knob = document.getElementById("knob");
     const knobContainer = document.getElementById("knobContainer");
     const speedValue = document.getElementById("speedValue");
+
     let isDragging = false;
 
     function snapToNearest(deg) {
+      // Snap positions: Low (0deg), Medium (135deg), High (270deg)
       let positions = [0, 135, 270];
       let labels = ["Low", "Medium", "High"];
-      let nearest = positions.reduce((p, c) =>
-        Math.abs(c - deg) < Math.abs(p - deg) ? c : p
+
+      let nearest = positions.reduce((prev, curr) => 
+        Math.abs(curr - deg) < Math.abs(prev - deg) ? curr : prev
       );
+
       knob.style.transform = `rotate(${nearest}deg)`;
-      let mode = labels[positions.indexOf(nearest)];
+
+      let index = positions.indexOf(nearest);
+      let mode = labels[index];
       speedValue.innerText = mode;
+
+      // Send to Firebase
       database.ref("/").update({ SpeedMode: mode });
     }
 
-    function setAngle(x, y) {
+    function setAngleFromEvent(x, y) {
       let rect = knobContainer.getBoundingClientRect();
-      let cx = rect.left + rect.width / 2;
-      let cy = rect.top + rect.height / 2;
-      let dx = x - cx;
-      let dy = y - cy;
+      let centerX = rect.left + rect.width / 2;
+      let centerY = rect.top + rect.height / 2;
+
+      let dx = x - centerX;
+      let dy = y - centerY;
       let rad = Math.atan2(dy, dx);
-      let deg = rad * (180 / Math.PI) + 90;
+      let deg = rad * (180 / Math.PI);
+
+      deg = deg + 90;
       if (deg < 0) deg = 0;
       if (deg > 270) deg = 270;
+
       snapToNearest(deg);
     }
 
-    knob.addEventListener("mousedown", () => isDragging = true);
-    document.addEventListener("mouseup", () => isDragging = false);
-    document.addEventListener("mousemove", e => { if (isDragging) setAngle(e.clientX, e.clientY); });
-    knob.addEventListener("touchstart", e => { e.preventDefault(); isDragging = true; });
-    document.addEventListener("touchend", () => isDragging = false);
-    document.addEventListener("touchmove", e => {
+    // Mouse
+    knob.addEventListener("mousedown", () => { isDragging = true; });
+    document.addEventListener("mouseup", () => { isDragging = false; });
+    document.addEventListener("mousemove", (e) => {
+      if (isDragging) setAngleFromEvent(e.clientX, e.clientY);
+    });
+
+    // Touch
+    knob.addEventListener("touchstart", (e) => { 
+      e.preventDefault(); 
+      isDragging = true; 
+    });
+    document.addEventListener("touchend", () => { isDragging = false; });
+    document.addEventListener("touchmove", (e) => {
       if (isDragging && e.touches.length > 0) {
-        let t = e.touches[0];
-        setAngle(t.clientX, t.clientY);
+        let touch = e.touches[0];
+        setAngleFromEvent(touch.clientX, touch.clientY);
       }
     });
   </script>
